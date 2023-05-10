@@ -1,28 +1,46 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
-)
-
-const (
-	_CONFIG             = "git.json"
-	_MAX_SIMULTANE_PROC = 5
 )
 
 func main() {
 	log.SetFlags(log.Llongfile | log.Lmicroseconds | log.LUTC | log.Ldate)
 	log.SetOutput(os.Stdout)
 
-	if c, err := getRepoConfig(_CONFIG); err != nil {
+	if workdir, err := os.Getwd(); err != nil {
 		log.Fatalln(err)
 	} else {
-		for i := range c {
-			log.Printf("BEGIN --- [%s]\n", c[i].Link)
-			if err = c[i].Clone(); err != nil {
-				log.Printf("error processing repo: %#v\n", err)
+
+		log.Printf("workdir: %s\n", workdir)
+
+		if entries, err := os.ReadDir("./"); err != nil {
+			log.Fatalln(err)
+		} else {
+
+			for _, e := range entries {
+
+				if e.IsDir() {
+
+					if e.Name() != ".git" {
+
+						if dirEntries, err := os.ReadDir(fmt.Sprintf("%s\\%s", workdir, e.Name())); err != nil {
+							log.Fatalln(err)
+						} else {
+
+							for _, i := range dirEntries {
+
+								if i.IsDir() {
+
+									log.Printf("dir: %s\\%s\n", e.Name(), i.Name())
+								}
+							}
+						}
+					}
+				}
 			}
-			log.Printf("END --- [%s]\n\n", c[i].Link)
 		}
 	}
 }
