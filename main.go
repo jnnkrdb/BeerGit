@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"os/exec"
 )
 
 func main() {
@@ -26,20 +27,81 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	for i := range entries {
-		if entries[i].IsDir() && !(entries[i].Name() == ".git") {
+	// create the list of repositories, which need to be pulled
+	var RepositoriesToPullList []string
 
-			var dirEntries []fs.DirEntry
-			if dirEntries, err = os.ReadDir(fmt.Sprintf("%s\\%s", workdir, entries[i].Name())); err != nil {
-				log.Printf("%#v\n", err)
-				continue
-			}
+	for _, subFolder := range entries {
+		log.Printf("subFolder: %s ", subFolder.Name())
 
-			for ii := range dirEntries {
-				if dirEntries[ii].IsDir() {
-					log.Printf("dir: %s\\%s\n", entries[i].Name(), dirEntries[ii].Name())
-				}
-			}
+		// make dir checks
+		if err = checkDir(subFolder); err != nil {
+			log.Printf("\tSKIPPED - errormsg: %v\n", err)
+			continue
 		}
+
+		// read subdirectories of the current directory
+		var resDir string = fmt.Sprintf("%s\\%s", workdir, subFolder.Name())
+		if err = readGitProject(resDir); err != nil {
+			log.Printf("\tSKIPPED - errormsg: %v\n", err)
+			continue
+		}
+
+		// change dir and run git pull
+		log.Printf("change dir and run git pull\n")
+		RepositoriesToPullList = append(RepositoriesToPullList, resDir)
+
+	}
+
+	log.Printf("\n\n\nstarting git pull session")
+	for i := range RepositoriesToPullList {
+		gitPull(RepositoriesToPullList[i])
+	}
+}
+
+// ---------------------------------------------------------------------- additional functions
+func checkDir(dEntry fs.DirEntry) error {
+	log.Printf("checking folder: %s\n", dEntry.Name())
+
+	switch {
+	case !dEntry.IsDir():
+		return fmt.Errorf("dEntry is no directory")
+
+	case dEntry.Name() == ".git":
+		return fmt.Errorf("dEntry is '.git'-Directory")
+	}
+	return nil
+}
+
+func readGitProject(path string) error {
+	log.Printf("checking directory: %s\n", path)
+
+	var err error
+	var subEntries []fs.DirEntry
+	if subEntries, err = os.ReadDir(path); err != nil {
+		return err
+	}
+
+	for i := range subEntries {
+		if subEntries[i].Name() == ".git" {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("this is not a .git Project directory")
+}
+
+func gitPull(dir string) {
+	log.Printf("pulling repos-dir: %s\n", dir)
+
+	if err := os.Chdir(dir); err != nil {
+		log.Printf("error changing dir: %v\n", err)
+		return
+	}
+
+	if stdout, err := exec.Command("git", "pull").Output(); err != nil {
+		log.Printf("error pulling project: %v\n", err)
+		return
+	} else {
+		log.Printf("pulling message: %s\n", string(stdout))
 	}
 }
