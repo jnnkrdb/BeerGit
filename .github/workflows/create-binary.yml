@@ -1,0 +1,36 @@
+name: CREATE BINARY ON MASTER
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+
+env:
+  HELM_EXPERIMENTAL_OCI: 1 #enable OCI support
+
+jobs:
+  make:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v0
+      with:
+        versionSpec: '5.x'
+        
+    - name: Determine Version
+      id:   gitversion # id to later be referenced
+      uses: gittools/actions/gitversion/execute@v0
+      with:
+        useConfigFile: true
+        configFilePath: .github/gitversion/GitVersion.yml
+
+    - name: bash-version
+      run: |
+        echo ${{ steps.gitversion.outputs.semVer }}
+        sed -i "s|latest|${{ steps.gitversion.outputs.semVer }}|g" ./version/currentVersion.go

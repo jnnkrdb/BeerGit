@@ -1,0 +1,8 @@
+git:
+  - collection: "<collection-name>"
+    dir: "<collection-directory>"
+    repos:
+      - name: "<repository-name>"
+        url: "<repository-url>"
+        branch: "<repository-branch>"
+        path: "<repository-path>"
