@@ -10,11 +10,25 @@ env:
   HELM_EXPERIMENTAL_OCI: 1 #enable OCI support
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Test Application
+      run: go test -v .
+
+#    - name: Build
+#      run: go build -o beergit -v .
+
   make:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+    - name: Checkout Code
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         
